@@ -1,211 +1,176 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Conta Lukintosh - Login / Registro</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter&display=swap" rel="stylesheet" />
-<style>
-  * {
-    box-sizing: border-box;
-  }
-  body {
-    margin: 0; padding: 0;
-    font-family: 'Inter', sans-serif;
-    background-color: #121212;
-    color: #eee;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-  }
-  .container {
-    background: #1e1e1e;
-    padding: 2rem 3rem;
-    border-radius: 12px;
-    box-shadow: 0 0 20px rgb(0 0 0 / 0.7);
-    width: 350px;
-  }
-  h2 {
-    margin: 0 0 1rem;
-    font-weight: 700;
-    text-align: center;
-    color: #3fa9f5;
-  }
-  .tabs {
-    display: flex;
-    margin-bottom: 2rem;
-    border-bottom: 2px solid #333;
-  }
-  .tab {
-    flex: 1;
-    padding: 0.8rem 0;
-    text-align: center;
-    font-weight: 600;
-    cursor: pointer;
-    color: #777;
-    border-bottom: 3px solid transparent;
-    user-select: none;
-    transition: all 0.3s ease;
-  }
-  .tab.active {
-    color: #3fa9f5;
-    border-color: #3fa9f5;
-  }
-  form {
-    display: none;
-    flex-direction: column;
-  }
-  form.active {
-    display: flex;
-  }
-  label {
-    font-size: 0.9rem;
-    margin-bottom: 0.3rem;
-  }
-  input[type="text"],
-  input[type="email"],
-  input[type="password"] {
-    padding: 0.7rem 1rem;
-    margin-bottom: 1.3rem;
-    border: none;
-    border-radius: 6px;
-    background-color: #121212;
-    color: #eee;
-    box-shadow: inset 0 0 8px rgb(0 0 0 / 0.8);
-    font-size: 1rem;
-  }
-  input::placeholder {
-    color: #666;
-  }
-  .btn-primary {
-    background-color: #3fa9f5;
-    border: none;
-    padding: 1rem;
-    border-radius: 7px;
-    color: #121212;
-    font-weight: 700;
-    font-size: 1.1rem;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-  }
-  .btn-primary:hover {
-    background-color: #2b7bd8;
-  }
-  .forgot-password {
-    font-size: 0.85rem;
-    color: #555;
-    text-align: right;
-    margin-bottom: 1rem;
-    cursor: pointer;
-  }
-  .forgot-password:hover {
-    color: #3fa9f5;
-    text-decoration: underline;
-  }
-  .message {
-    text-align: center;
-    margin-top: 1rem;
-    font-size: 0.9rem;
-    color: #3fa9f5;
-  }
-</style>
+  <meta charset="UTF-8">
+  <title>Lukintosh Accounts</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #0f172a;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+    h1 {
+      margin-bottom: 20px;
+    }
+    .container {
+      background: #1e293b;
+      padding: 20px;
+      border-radius: 10px;
+      width: 320px;
+      text-align: center;
+    }
+    input {
+      width: 90%;
+      padding: 10px;
+      margin: 8px 0;
+      border: none;
+      border-radius: 5px;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      background: #3b82f6;
+      border: none;
+      border-radius: 5px;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #2563eb;
+    }
+    p {
+      margin-top: 15px;
+      font-size: 14px;
+    }
+    a {
+      color: #3b82f6;
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+    .progress {
+      margin-top: 20px;
+      padding: 10px;
+      background: #0f172a;
+      border: 1px solid #3b82f6;
+      border-radius: 5px;
+    }
+  </style>
 </head>
 <body>
+  <h1>Lukintosh Accounts</h1>
+  <div class="container">
+    <input type="email" id="email" placeholder="Email">
+    <input type="password" id="password" placeholder="Senha">
+    <button onclick="signUp()">Criar Conta</button>
+    <button onclick="login()">Entrar</button>
+    <p id="message"></p>
 
-<div class="container">
-  <h2>Conta Lukintosh</h2>
-  <div class="tabs">
-    <div class="tab active" id="tab-login">Login</div>
-    <div class="tab" id="tab-register">Registrar</div>
+    <div id="progressDiv" class="progress" style="display:none;">
+      <h3>Seu Progresso</h3>
+      <p id="progressData"></p>
+      <button onclick="saveProgress()">Salvar Progresso</button>
+      <button onclick="loadProgress()">Carregar Progresso</button>
+    </div>
   </div>
 
-  <form id="form-login" class="active" novalidate>
-    <label for="login-email">Email</label>
-    <input type="email" id="login-email" name="login-email" placeholder="seu@email.com" required />
-    <label for="login-password">Senha</label>
-    <input type="password" id="login-password" name="login-password" placeholder="Sua senha" required minlength="6" />
-    <div class="forgot-password" tabindex="0">Esqueceu a senha?</div>
-    <button type="submit" class="btn-primary">Entrar</button>
-  </form>
+<script type="module">
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-analytics.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
 
-  <form id="form-register" novalidate>
-    <label for="register-name">Nome completo</label>
-    <input type="text" id="register-name" name="register-name" placeholder="Seu nome completo" required />
-    <label for="register-email">Email</label>
-    <input type="email" id="register-email" name="register-email" placeholder="seu@email.com" required />
-    <label for="register-password">Senha</label>
-    <input type="password" id="register-password" name="register-password" placeholder="Crie uma senha" required minlength="6" />
-    <label for="register-password-confirm">Confirmar senha</label>
-    <input type="password" id="register-password-confirm" name="register-password-confirm" placeholder="Repita a senha" required minlength="6" />
-    <button type="submit" class="btn-primary">Registrar</button>
-  </form>
+  // Your web app's Firebase configuration
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+  const firebaseConfig = {
+    apiKey: "AIzaSyCjQlVzKAjjBpJCa7idKcFT4QkHUlpZQFo",
+    authDomain: "firezonesalogin.firebaseapp.com",
+    projectId: "firezonesalogin",
+    storageBucket: "firezonesalogin.firebasestorage.app",
+    messagingSenderId: "971735310017",
+    appId: "1:971735310017:web:bda988223f03a47de27e40",
+    measurementId: "G-VG4HK7MJPQ"
+  };
 
-  <div id="message" class="message" aria-live="polite"></div>
-</div>
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
 
-<script>
-  const tabLogin = document.getElementById('tab-login');
-  const tabRegister = document.getElementById('tab-register');
-  const formLogin = document.getElementById('form-login');
-  const formRegister = document.getElementById('form-register');
-  const message = document.getElementById('message');
-
-  tabLogin.addEventListener('click', () => {
-    tabLogin.classList.add('active');
-    tabRegister.classList.remove('active');
-    formLogin.classList.add('active');
-    formRegister.classList.remove('active');
-    message.textContent = '';
-  });
-
-  tabRegister.addEventListener('click', () => {
-    tabRegister.classList.add('active');
-    tabLogin.classList.remove('active');
-    formRegister.classList.add('active');
-    formLogin.classList.remove('active');
-    message.textContent = '';
-  });
-
-  formLogin.addEventListener('submit', (e) => {
-    e.preventDefault();
-    // Simulação de login (apenas exemplo)
-    if (formLogin.checkValidity()) {
-      message.style.color = '#3fa9f5';
-      message.textContent = 'Login realizado com sucesso (simulado).';
-      formLogin.reset();
-    } else {
-      message.style.color = '#f44336';
-      message.textContent = 'Por favor, preencha todos os campos corretamente.';
+    // Funções de autenticação
+    function signUp() {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      auth.createUserWithEmailAndPassword(email, password)
+        .then(userCredential => {
+          document.getElementById("message").innerText = "✅ Conta criada!";
+          createDefaultProgress(userCredential.user.uid);
+        })
+        .catch(error => {
+          document.getElementById("message").innerText = "❌ " + error.message;
+        });
     }
-  });
 
-  formRegister.addEventListener('submit', (e) => {
-    e.preventDefault();
-    if (formRegister.checkValidity()) {
-      const pass = document.getElementById('register-password').value;
-      const passConfirm = document.getElementById('register-password-confirm').value;
-      if (pass !== passConfirm) {
-        message.style.color = '#f44336';
-        message.textContent = 'As senhas não coincidem.';
-        return;
-      }
-      message.style.color = '#3fa9f5';
-      message.textContent = 'Registro realizado com sucesso (simulado).';
-      formRegister.reset();
-    } else {
-      message.style.color = '#f44336';
-      message.textContent = 'Por favor, preencha todos os campos corretamente.';
+    function login() {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      auth.signInWithEmailAndPassword(email, password)
+        .then(userCredential => {
+          document.getElementById("message").innerText = "✅ Login realizado!";
+          document.getElementById("progressDiv").style.display = "block";
+          loadProgress();
+        })
+        .catch(error => {
+          document.getElementById("message").innerText = "❌ " + error.message;
+        });
     }
-  });
 
-  // Acessibilidade: permitir focar no "Esqueceu a senha?"
-  document.querySelector('.forgot-password').addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-      alert('Funcionalidade de recuperação de senha ainda não implementada.');
+    // Criar progresso inicial
+    function createDefaultProgress(uid) {
+      db.collection("progress").doc(uid).set({
+        level: 1,
+        coins: 0,
+        weapons: [],
+        skins: [],
+        lastSave: new Date().toISOString()
+      });
     }
-  });
-</script>
 
+    // Salvar progresso (exemplo simples)
+    function saveProgress() {
+      const user = auth.currentUser;
+      if (!user) return;
+      db.collection("progress").doc(user.uid).update({
+        level: Math.floor(Math.random() * 50), // exemplo: simula nível aleatório
+        coins: Math.floor(Math.random() * 1000),
+        lastSave: new Date().toISOString()
+      }).then(() => {
+        document.getElementById("message").innerText = "💾 Progresso salvo!";
+        loadProgress();
+      });
+    }
+
+    // Carregar progresso
+    function loadProgress() {
+      const user = auth.currentUser;
+      if (!user) return;
+      db.collection("progress").doc(user.uid).get().then(doc => {
+        if (doc.exists) {
+          const data = doc.data();
+          document.getElementById("progressData").innerText =
+            `Nível: ${data.level}\nMoedas: ${data.coins}\nÚltimo Save: ${data.lastSave}`;
+        }
+      });
+    }
+  </script>
 </body>
 </html>
