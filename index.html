@@ -1,29 +1,29 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt">
 <head>
   <meta charset="UTF-8">
   <title>Lukintosh Accounts</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #0f172a;
+      background: #111;
       color: #fff;
       display: flex;
-      flex-direction: column;
-      align-items: center;
       justify-content: center;
+      align-items: center;
       height: 100vh;
       margin: 0;
     }
-    h1 {
-      margin-bottom: 20px;
-    }
     .container {
-      background: #1e293b;
+      background: #1e1e1e;
       padding: 20px;
       border-radius: 10px;
       width: 320px;
       text-align: center;
+    }
+    h1 {
+      font-size: 20px;
+      margin-bottom: 20px;
     }
     input {
       width: 90%;
@@ -33,59 +33,42 @@
       border-radius: 5px;
     }
     button {
-      width: 100%;
-      padding: 10px;
-      margin-top: 10px;
-      background: #3b82f6;
-      border: none;
-      border-radius: 5px;
+      background: #0f9d58;
       color: white;
-      font-weight: bold;
+      border: none;
+      padding: 10px;
+      width: 100%;
+      border-radius: 5px;
       cursor: pointer;
+      margin-top: 8px;
     }
     button:hover {
-      background: #2563eb;
+      background: #0c7a43;
     }
-    p {
+    .message {
       margin-top: 15px;
       font-size: 14px;
-    }
-    a {
-      color: #3b82f6;
-      text-decoration: none;
-    }
-    a:hover {
-      text-decoration: underline;
-    }
-    .progress {
-      margin-top: 20px;
-      padding: 10px;
-      background: #0f172a;
-      border: 1px solid #3b82f6;
-      border-radius: 5px;
+      min-height: 20px;
     }
   </style>
 </head>
 <body>
-  <h1>Lukintosh Accounts</h1>
   <div class="container">
-    <input type="email" id="email" placeholder="Email">
-    <input type="password" id="password" placeholder="Senha">
+    <h1>Lukintosh Accounts</h1>
+    <input type="email" id="email" placeholder="Email"><br>
+    <input type="password" id="password" placeholder="Senha"><br>
     <button onclick="signUp()">Criar Conta</button>
     <button onclick="login()">Entrar</button>
-    <p id="message"></p>
-
-    <div id="progressDiv" class="progress" style="display:none;">
-      <h3>Seu Progresso</h3>
-      <p id="progressData"></p>
-      <button onclick="saveProgress()">Salvar Progresso</button>
-      <button onclick="loadProgress()">Carregar Progresso</button>
-    </div>
+    <div class="message" id="message"></div>
   </div>
 
-<script type="module">
+  <!-- Firebase SDK (v10 modular) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } 
+      from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
   // Import the functions you need from the SDKs you need
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+
   import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-analytics.js";
   // TODO: Add SDKs for Firebase products that you want to use
   // https://firebase.google.com/docs/web/setup#available-libraries
@@ -105,72 +88,32 @@
   // Initialize Firebase
   const app = initializeApp(firebaseConfig);
   const analytics = getAnalytics(app);
+</script>
+ 
 
-    // Funções de autenticação
-    function signUp() {
+    // Criar conta
+    window.signUp = async function() {
       const email = document.getElementById("email").value;
       const password = document.getElementById("password").value;
-      auth.createUserWithEmailAndPassword(email, password)
-        .then(userCredential => {
-          document.getElementById("message").innerText = "✅ Conta criada!";
-          createDefaultProgress(userCredential.user.uid);
-        })
-        .catch(error => {
-          document.getElementById("message").innerText = "❌ " + error.message;
-        });
-    }
+      try {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        document.getElementById("message").innerText = `✅ Conta criada: ${userCredential.user.email}`;
+      } catch (error) {
+        document.getElementById("message").innerText = "Erro: " + error.message;
+      }
+    };
 
-    function login() {
+    // Fazer login
+    window.login = async function() {
       const email = document.getElementById("email").value;
       const password = document.getElementById("password").value;
-      auth.signInWithEmailAndPassword(email, password)
-        .then(userCredential => {
-          document.getElementById("message").innerText = "✅ Login realizado!";
-          document.getElementById("progressDiv").style.display = "block";
-          loadProgress();
-        })
-        .catch(error => {
-          document.getElementById("message").innerText = "❌ " + error.message;
-        });
-    }
-
-    // Criar progresso inicial
-    function createDefaultProgress(uid) {
-      db.collection("progress").doc(uid).set({
-        level: 1,
-        coins: 0,
-        weapons: [],
-        skins: [],
-        lastSave: new Date().toISOString()
-      });
-    }
-
-    // Salvar progresso (exemplo simples)
-    function saveProgress() {
-      const user = auth.currentUser;
-      if (!user) return;
-      db.collection("progress").doc(user.uid).update({
-        level: Math.floor(Math.random() * 50), // exemplo: simula nível aleatório
-        coins: Math.floor(Math.random() * 1000),
-        lastSave: new Date().toISOString()
-      }).then(() => {
-        document.getElementById("message").innerText = "💾 Progresso salvo!";
-        loadProgress();
-      });
-    }
-
-    // Carregar progresso
-    function loadProgress() {
-      const user = auth.currentUser;
-      if (!user) return;
-      db.collection("progress").doc(user.uid).get().then(doc => {
-        if (doc.exists) {
-          const data = doc.data();
-          document.getElementById("progressData").innerText =
-            `Nível: ${data.level}\nMoedas: ${data.coins}\nÚltimo Save: ${data.lastSave}`;
-        }
-      });
-    }
+      try {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        document.getElementById("message").innerText = `🚀 Bem-vindo: ${userCredential.user.email}`;
+      } catch (error) {
+        document.getElementById("message").innerText = "Erro: " + error.message;
+      }
+    };
   </script>
 </body>
 </html>
