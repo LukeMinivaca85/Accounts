@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Lukintosh ID — Entrar</title>
+<title>Lukintosh ID — Criar conta</title>
 
 <style>
 body {
@@ -16,7 +16,7 @@ body {
 }
 
 .box {
-  width: 360px;
+  width: 380px;
   padding: 32px;
   border: 1px solid #000;
   border-radius: 12px;
@@ -35,10 +35,16 @@ input {
   font-size: 14px;
 }
 
+small {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+}
+
 button {
   width: 100%;
   padding: 12px;
-  margin-top: 14px;
+  margin-top: 18px;
   border-radius: 8px;
   border: 1px solid #000;
   background: #ffffff;
@@ -49,12 +55,6 @@ button {
 
 button:hover {
   background: #f5f5f5;
-}
-
-.divider {
-  margin: 18px 0;
-  text-align: center;
-  font-size: 14px;
 }
 
 .link {
@@ -72,33 +72,31 @@ a {
 
 <body>
 
-<div class="box">
-  <h2>Lukintosh ID</h2>
+<form class="box" method="POST" action="/criar-conta">
+  <h2>Criar conta Lukintosh</h2>
 
-  <!-- LOGIN NORMAL -->
-  <form method="POST" action="/login">
-    <input type="email" name="email" placeholder="E-mail" required>
-    <input type="password" name="senha" placeholder="Senha" required>
+  <input name="nome" placeholder="Nome" required>
+  <input name="sobrenome" placeholder="Sobrenome" required>
 
-    <button type="submit">Entrar</button>
-  </form>
+  <input type="email" name="email" placeholder="E-mail" required>
 
-  <div class="divider">ou</div>
+  <input name="telefone" placeholder="Telefone (DDD + número)" required>
 
-  <!-- GOOGLE -->
-  <form action="/auth/google">
-    <button type="submit">Entrar com Google</button>
-  </form>
+  <input name="cep" placeholder="CEP" required>
+  <input name="endereco" placeholder="Endereço completo" required>
 
-  <!-- MICROSOFT -->
-  <form action="/auth/microsoft">
-    <button type="submit">Entrar com Microsoft</button>
-  </form>
+  <input type="password" name="senha" placeholder="Criar senha" required>
+  <small>
+    A senha deve conter no mínimo 8 caracteres,<br>
+    1 letra maiúscula, 1 minúscula e 1 número.
+  </small>
+
+  <button type="submit">Criar conta</button>
 
   <div class="link">
-    <a href="/criar-conta">Criar conta</a>
+    <a href="/">Já tenho conta</a>
   </div>
-</div>
+</form>
 
 </body>
 </html>

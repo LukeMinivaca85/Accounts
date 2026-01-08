@@ -3,64 +3,100 @@
 <head>
 <meta charset="UTF-8">
 <title>Verificação — Lukintosh</title>
+
 <style>
 body {
-  background:#f4f6f8;
-  font-family: system-ui, sans-serif;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  height:100vh;
+  font-family: system-ui;
+  background: #ffffff;
+  color: #000000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
 }
-.card {
-  background:#fff;
-  padding:32px;
-  width:340px;
-  border-radius:12px;
-  box-shadow:0 10px 30px rgba(0,0,0,.1);
-  text-align:center;
+
+.box {
+  padding: 32px;
+  border: 1px solid #000;
+  border-radius: 12px;
+  text-align: center;
 }
-input {
-  width:100%;
-  padding:12px;
-  margin-top:12px;
-  border-radius:8px;
-  border:1px solid #ddd;
+
+.code {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin: 24px 0;
 }
+
+.code input {
+  width: 42px;
+  height: 52px;
+  font-size: 22px;
+  text-align: center;
+  border-radius: 8px;
+  border: 1px solid #000;
+}
+
 button {
-  width:100%;
-  margin-top:16px;
-  padding:12px;
-  background:#111;
-  color:#fff;
-  border:none;
-  border-radius:8px;
-  font-weight:600;
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #000;
+  background: #ffffff;
+  color: #000000;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #f5f5f5;
 }
 </style>
 </head>
+
 <body>
 
-<div class="card">
-  <h2>Verificação</h2>
-  <p>Digite o código enviado para seu e-mail</p>
-  <input id="codigo" placeholder="Código de 6 dígitos">
-  <button onclick="verificar()">Verificar</button>
+<div class="box">
+  <h2>Verifique seu e-mail</h2>
+  <p>Digite o código de 6 dígitos</p>
+
+  <div class="code">
+    <input maxlength="1">
+    <input maxlength="1">
+    <input maxlength="1">
+    <input maxlength="1">
+    <input maxlength="1">
+    <input maxlength="1">
+  </div>
+
+  <button onclick="verificar()">Confirmar</button>
 </div>
 
 <script>
+const inputs = document.querySelectorAll(".code input");
+
+inputs.forEach((input, i) => {
+  input.addEventListener("input", () => {
+    if (input.value && inputs[i + 1]) {
+      inputs[i + 1].focus();
+    }
+  });
+});
+
 function verificar() {
+  let codigo = "";
+  inputs.forEach(i => codigo += i.value);
+
   fetch("/verificar-codigo", {
     method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({
-      codigo: document.getElementById("codigo").value
-    })
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({ codigo })
   })
   .then(r => r.json())
   .then(d => {
-    if (d.ok) alert("Conta verificada com sucesso!");
-    else alert("Código inválido ou expirado.");
+    if (d.ok) alert("Conta verificada!");
+    else alert("Código inválido");
   });
 }
 </script>
