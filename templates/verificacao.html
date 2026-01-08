@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Verificação — Lukintosh</title>
+<style>
+body {
+  background:#f4f6f8;
+  font-family: system-ui, sans-serif;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+}
+.card {
+  background:#fff;
+  padding:32px;
+  width:340px;
+  border-radius:12px;
+  box-shadow:0 10px 30px rgba(0,0,0,.1);
+  text-align:center;
+}
+input {
+  width:100%;
+  padding:12px;
+  margin-top:12px;
+  border-radius:8px;
+  border:1px solid #ddd;
+}
+button {
+  width:100%;
+  margin-top:16px;
+  padding:12px;
+  background:#111;
+  color:#fff;
+  border:none;
+  border-radius:8px;
+  font-weight:600;
+}
+</style>
+</head>
+<body>
+
+<div class="card">
+  <h2>Verificação</h2>
+  <p>Digite o código enviado para seu e-mail</p>
+  <input id="codigo" placeholder="Código de 6 dígitos">
+  <button onclick="verificar()">Verificar</button>
+</div>
+
+<script>
+function verificar() {
+  fetch("/verificar-codigo", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+      codigo: document.getElementById("codigo").value
+    })
+  })
+  .then(r => r.json())
+  .then(d => {
+    if (d.ok) alert("Conta verificada com sucesso!");
+    else alert("Código inválido ou expirado.");
+  });
+}
+</script>
+
+</body>
+</html>
