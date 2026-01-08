@@ -200,6 +200,38 @@ def verificar_codigo():
 
     codigo_data.pop(email)
     return jsonify({"ok": True})
+@app.route("/auth/google")
+def auth_google():
+    return oauth.google.authorize_redirect(
+        redirect_uri=url_for("auth_google_callback", _external=True)
+    )
+
+@app.route("/auth/google/callback")
+def auth_google_callback():
+    token = oauth.google.authorize_access_token()
+    user = oauth.google.userinfo()
+    email = user["email"]
+
+    session["email"] = email
+    return redirect("/verificacao")
+
+@app.route("/auth/microsoft")
+def auth_microsoft():
+    return oauth.microsoft.authorize_redirect(
+        redirect_uri=url_for("auth_microsoft_callback", _external=True)
+    )
+
+@app.route("/auth/microsoft/callback")
+def auth_microsoft_callback():
+    token = oauth.microsoft.authorize_access_token()
+    user = oauth.microsoft.get(
+        "https://graph.microsoft.com/v1.0/me"
+    ).json()
+
+    email = user.get("mail") or user.get("userPrincipalName")
+    session["email"] = email
+    return redirect("/verificacao")
+
 
 # --------- RUN (RENDER / PROD) ----------
 if __name__ == "__main__":
