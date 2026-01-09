@@ -10,7 +10,6 @@ app.secret_key = "lukintosh-secret-key"
 
 # ================= CONFIG =================
 SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
-print("SENDGRID_API_KEY =", SENDGRID_API_KEY)
 EMAIL_REMETENTE = "lucas@lukintosh.com"
 REPLY_TO_EMAIL = "noreply@lukintosh.com"
 # =========================================
@@ -40,8 +39,16 @@ codigo_data = {}
 def gerar_codigo():
     return str(random.randint(100000, 999999))
 
-# ---------- EMAIL ----------
+# ---------- EMAIL (COM DEBUG) ----------
 def enviar_email(codigo, destino):
+    print("==== ENVIO DE EMAIL ====")
+    print("DESTINO:", destino)
+    print("SENDGRID_API_KEY EXISTE?", bool(SENDGRID_API_KEY))
+
+    if not SENDGRID_API_KEY:
+        print("❌ SENDGRID_API_KEY NÃO DEFINIDA")
+        return
+
     url = "https://api.sendgrid.com/v3/mail/send"
     headers = {
         "Authorization": f"Bearer {SENDGRID_API_KEY}",
@@ -53,7 +60,7 @@ def enviar_email(codigo, destino):
         <h2>Lukintosh</h2>
         <p>Seu código de verificação:</p>
         <h1>{codigo}</h1>
-        <p>Este código expira em 5 minutos.</p>
+        <p>Expira em 5 minutos.</p>
         <hr>
         <p style="font-size:12px">Lukintosh Corporation</p>
     </div>
@@ -73,7 +80,9 @@ def enviar_email(codigo, destino):
     }
 
     r = requests.post(url, headers=headers, json=body)
-    print("SENDGRID:", r.status_code)
+    print("SENDGRID STATUS:", r.status_code)
+    print("SENDGRID RESPONSE:", r.text)
+    print("========================")
 
 # ---------- ROTAS ----------
 @app.route("/")
@@ -129,7 +138,6 @@ def login():
 
     session["email"] = email
 
-    # SEMPRE VERIFICA SE NÃO ESTIVER VERIFICADO
     if user[1] != 1:
         codigo = gerar_codigo()
         codigo_data[email] = {
@@ -173,7 +181,7 @@ def verificar_codigo():
     codigo_data.pop(email)
     return jsonify({"ok": True})
 
-# ---------- MAIN ----------
+# ---------- MAIN (PRODUÇÃO) ----------
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
