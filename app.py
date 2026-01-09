@@ -1,26 +1,46 @@
-from flask import Flask, render_template, request, redirect, session, jsonify
+from flask import Flask, render_template, request, redirect, session, jsonify, url_for
 import sqlite3
 import random
 import time
 import requests
-import os
-import logging
-logging.basicConfig(level=logging.INFO)
 
-
-
-
+from authlib.integrations.flask_client import OAuth
 
 app = Flask(__name__)
 app.secret_key = "lukintosh-secret-key"
 
 # ================= CONFIG =================
-SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
+SENDGRID_API_KEY = "SUA_API_KEY_SENDGRID"
 EMAIL_REMETENTE = "lucas@lukintosh.com"
 REPLY_TO_EMAIL = "noreply@lukintosh.com"
+
+GOOGLE_CLIENT_ID = "SEU_GOOGLE_CLIENT_ID"
+GOOGLE_CLIENT_SECRET = "SEU_GOOGLE_CLIENT_SECRET"
+
+MICROSOFT_CLIENT_ID = "SEU_MICROSOFT_CLIENT_ID"
+MICROSOFT_CLIENT_SECRET = "SEU_MICROSOFT_CLIENT_SECRET"
 # =========================================
 
-# ---------- DATABASE ----------
+# --------- OAUTH ----------
+oauth = OAuth(app)
+
+oauth.register(
+    name="google",
+    client_id=GOOGLE_CLIENT_ID,
+    client_secret=GOOGLE_CLIENT_SECRET,
+    server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
+    client_kwargs={"scope": "openid email profile"}
+)
+
+oauth.register(
+    name="microsoft",
+    client_id=MICROSOFT_CLIENT_ID,
+    client_secret=MICROSOFT_CLIENT_SECRET,
+    server_metadata_url="https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration",
+    client_kwargs={"scope": "openid email profile"}
+)
+
+# --------- DATABASE ----------
 def get_db():
     return sqlite3.connect("users.db")
 
@@ -31,7 +51,7 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             email TEXT UNIQUE,
             password TEXT,
-            verified INTEGER DEFAULT 0
+            verified INTEGER
         )
     """)
     db.commit()
@@ -39,22 +59,14 @@ def init_db():
 
 init_db()
 
-# ---------- CÓDIGO DE VERIFICAÇÃO ----------
+# --------- CODE STORAGE ----------
 codigo_data = {}
 
 def gerar_codigo():
     return str(random.randint(100000, 999999))
 
-# ---------- EMAIL (COM DEBUG) ----------
+# --------- SEND EMAIL ----------
 def enviar_email(codigo, destino):
-    logging.info("==== ENVIO DE EMAIL ====")
-    logging.info(f"DESTINO: {destino}")
-    logging.info(f"SENDGRID_API_KEY EXISTE? {bool(SENDGRID_API_KEY)}")
-
-    if not SENDGRID_API_KEY:
-        logging.error("SENDGRID_API_KEY NÃO DEFINIDA")
-        return
-
     url = "https://api.sendgrid.com/v3/mail/send"
     headers = {
         "Authorization": f"Bearer {SENDGRID_API_KEY}",
@@ -62,50 +74,50 @@ def enviar_email(codigo, destino):
     }
 
     html = f"""
-    <div style="font-family:Arial; color:#000; background:#fff">
-        <h2>Lukintosh</h2>
-        <p>Seu código de verificação:</p>
-        <h1>{codigo}</h1>
-    </div>
+    <h2>Lukintosh</h2>
+    <p>Seu código de verificação:</p>
+    <h1>{codigo}</h1>
+    <p>Expira em 5 minutos.</p>
     """
 
     body = {
-        "personalizations": [{"to": [{"email": destino}]}],
+        "personalizations": [{
+            "to": [{"email": destino}]
+        }],
         "from": {"email": EMAIL_REMETENTE},
+        "reply_to": {"email": REPLY_TO_EMAIL},
         "subject": "Código de verificação – Lukintosh",
-        "content": [{"type": "text/html", "value": html}]
+        "content": [{
+            "type": "text/html",
+            "value": html
+        }]
     }
 
     r = requests.post(url, headers=headers, json=body)
-    logging.info(f"SENDGRID STATUS: {r.status_code}")
-    logging.info(f"SENDGRID RESPONSE: {r.text}")
+    print("SENDGRID:", r.status_code)
 
-
-# ---------- ROTAS ----------
+# --------- ROUTES ----------
 @app.route("/")
 def login_page():
     return render_template("login.html")
 
-@app.route("/criar-conta")
-def criar_conta_page():
-    return render_template("criar_conta.html")
-
-@app.route("/criar-conta", methods=["POST"])
-def criar_conta():
+@app.route("/login", methods=["POST"])
+def login():
     email = request.form["email"]
     senha = request.form["senha"]
 
     db = get_db()
-    try:
+    user = db.execute(
+        "SELECT * FROM users WHERE email = ?",
+        (email,)
+    ).fetchone()
+
+    if user is None:
         db.execute(
             "INSERT INTO users (email, password, verified) VALUES (?, ?, 0)",
             (email, senha)
         )
         db.commit()
-    except sqlite3.IntegrityError:
-        db.close()
-        return "Usuário já existe", 400
-    db.close()
 
     session["email"] = email
 
@@ -118,33 +130,73 @@ def criar_conta():
     enviar_email(codigo, email)
     return redirect("/verificacao")
 
-@app.route("/login", methods=["POST"])
-def login():
-    email = request.form["email"]
-    senha = request.form["senha"]
+# --------- GOOGLE ----------
+@app.route("/auth/google")
+def auth_google():
+    return oauth.google.authorize_redirect(
+        url_for("auth_google_callback", _external=True)
+    )
+
+@app.route("/auth/google/callback")
+def auth_google_callback():
+    token = oauth.google.authorize_access_token()
+    user = oauth.google.parse_id_token(token)
+
+    email = user["email"]
 
     db = get_db()
-    user = db.execute(
-        "SELECT password, verified FROM users WHERE email = ?",
-        (email,)
-    ).fetchone()
-    db.close()
-
-    if not user or user[0] != senha:
-        return "Login inválido", 401
+    if db.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone() is None:
+        db.execute(
+            "INSERT INTO users (email, password, verified) VALUES (?, '', 0)",
+            (email,)
+        )
+        db.commit()
 
     session["email"] = email
 
-    if user[1] != 1:
-        codigo = gerar_codigo()
-        codigo_data[email] = {
-            "codigo": codigo,
-            "expira": time.time() + 300
-        }
-        enviar_email(codigo, email)
+    codigo = gerar_codigo()
+    codigo_data[email] = {
+        "codigo": codigo,
+        "expira": time.time() + 300
+    }
 
+    enviar_email(codigo, email)
     return redirect("/verificacao")
 
+# --------- MICROSOFT ----------
+@app.route("/auth/microsoft")
+def auth_microsoft():
+    return oauth.microsoft.authorize_redirect(
+        url_for("auth_microsoft_callback", _external=True)
+    )
+
+@app.route("/auth/microsoft/callback")
+def auth_microsoft_callback():
+    token = oauth.microsoft.authorize_access_token()
+    user = oauth.microsoft.parse_id_token(token)
+
+    email = user.get("email") or user.get("preferred_username")
+
+    db = get_db()
+    if db.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone() is None:
+        db.execute(
+            "INSERT INTO users (email, password, verified) VALUES (?, '', 0)",
+            (email,)
+        )
+        db.commit()
+
+    session["email"] = email
+
+    codigo = gerar_codigo()
+    codigo_data[email] = {
+        "codigo": codigo,
+        "expira": time.time() + 300
+    }
+
+    enviar_email(codigo, email)
+    return redirect("/verificacao")
+
+# --------- VERIFICAÇÃO ----------
 @app.route("/verificacao")
 def verificacao_page():
     if "email" not in session:
@@ -173,7 +225,6 @@ def verificar_codigo():
         (email,)
     )
     db.commit()
-    db.close()
 
     codigo_data.pop(email)
     return jsonify({"ok": True})
