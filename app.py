@@ -5,6 +5,10 @@ import time
 import requests
 import os
 
+print("🚀 APP.PY DA LUKINTOSH CARREGADO 🚀")
+
+
+
 app = Flask(__name__)
 app.secret_key = "lukintosh-secret-key"
 
