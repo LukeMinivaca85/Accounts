@@ -4,8 +4,10 @@ import random
 import time
 import requests
 import os
+import logging
+logging.basicConfig(level=logging.INFO)
 
-print("🚀 APP.PY DA LUKINTOSH CARREGADO 🚀")
+
 
 
 
@@ -45,12 +47,12 @@ def gerar_codigo():
 
 # ---------- EMAIL (COM DEBUG) ----------
 def enviar_email(codigo, destino):
-    print("==== ENVIO DE EMAIL ====")
-    print("DESTINO:", destino)
-    print("SENDGRID_API_KEY EXISTE?", bool(SENDGRID_API_KEY))
+    logging.info("==== ENVIO DE EMAIL ====")
+    logging.info(f"DESTINO: {destino}")
+    logging.info(f"SENDGRID_API_KEY EXISTE? {bool(SENDGRID_API_KEY)}")
 
     if not SENDGRID_API_KEY:
-        print("❌ SENDGRID_API_KEY NÃO DEFINIDA")
+        logging.error("SENDGRID_API_KEY NÃO DEFINIDA")
         return
 
     url = "https://api.sendgrid.com/v3/mail/send"
@@ -64,29 +66,20 @@ def enviar_email(codigo, destino):
         <h2>Lukintosh</h2>
         <p>Seu código de verificação:</p>
         <h1>{codigo}</h1>
-        <p>Expira em 5 minutos.</p>
-        <hr>
-        <p style="font-size:12px">Lukintosh Corporation</p>
     </div>
     """
 
     body = {
-        "personalizations": [{
-            "to": [{"email": destino}]
-        }],
+        "personalizations": [{"to": [{"email": destino}]}],
         "from": {"email": EMAIL_REMETENTE},
-        "reply_to": {"email": REPLY_TO_EMAIL},
         "subject": "Código de verificação – Lukintosh",
-        "content": [{
-            "type": "text/html",
-            "value": html
-        }]
+        "content": [{"type": "text/html", "value": html}]
     }
 
     r = requests.post(url, headers=headers, json=body)
-    print("SENDGRID STATUS:", r.status_code)
-    print("SENDGRID RESPONSE:", r.text)
-    print("========================")
+    logging.info(f"SENDGRID STATUS: {r.status_code}")
+    logging.info(f"SENDGRID RESPONSE: {r.text}")
+
 
 # ---------- ROTAS ----------
 @app.route("/")
