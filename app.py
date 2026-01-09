@@ -3,6 +3,7 @@ import sqlite3
 import random
 import time
 import requests
+import os
 
 from authlib.integrations.flask_client import OAuth
 
