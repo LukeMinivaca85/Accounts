@@ -109,26 +109,24 @@ def login():
 
     db = get_db()
     user = db.execute(
-        "SELECT * FROM users WHERE email = ?",
+        "SELECT password FROM users WHERE email = ?",
         (email,)
     ).fetchone()
+    db.close()
 
-    if user is None:
-        db.execute(
-            "INSERT INTO users (email, password, verified) VALUES (?, ?, 0)",
-            (email, senha)
-        )
-        db.commit()
+    if not user or user[0] != senha:
+        return "Login inválido", 401
 
     session["email"] = email
 
+    # 🔥 SEMPRE ENVIA O CÓDIGO (DEV MODE)
     codigo = gerar_codigo()
     codigo_data[email] = {
         "codigo": codigo,
         "expira": time.time() + 300
     }
-
     enviar_email(codigo, email)
+
     return redirect("/verificacao")
 
 # --------- GOOGLE ----------
