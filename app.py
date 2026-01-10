@@ -12,8 +12,8 @@ app.secret_key = "lukintosh-secret-key"
 
 # ================= CONFIG =================
 SENDGRID_API_KEY = "SUA_API_KEY_SENDGRID"
-EMAIL_REMETENTE = "lucas@lukintosh.com"
-REPLY_TO_EMAIL = "noreply@lukintosh.com"
+EMAIL_REMETENTE = "no-reply@lukintosh.com"
+REPLY_TO_EMAIL = "lsilqueiracorre@gmail.com"
 
 GOOGLE_CLIENT_ID = "SEU_GOOGLE_CLIENT_ID"
 GOOGLE_CLIENT_SECRET = "SEU_GOOGLE_CLIENT_SECRET"
@@ -128,6 +128,20 @@ def login():
     enviar_email(codigo, email)
 
     return redirect("/verificacao")
+@app.route("/reenviar-codigo", methods=["POST"])
+def reenviar_codigo():
+    email = session.get("email")
+    if not email:
+        return jsonify({"ok": False})
+
+    codigo = gerar_codigo()
+    codigo_data[email] = {
+        "codigo": codigo,
+        "expira": time.time() + 300
+    }
+
+    enviar_email(codigo, email)
+    return jsonify({"ok": True})
 
 # --------- GOOGLE ----------
 @app.route("/auth/google")
