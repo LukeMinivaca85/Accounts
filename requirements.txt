@@ -3,3 +3,4 @@ requests
 authlib
 resend
 Flask-Limiter
+PyJWT
