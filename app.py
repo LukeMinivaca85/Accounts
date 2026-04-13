@@ -20,10 +20,8 @@ EMAIL_REMETENTE = "no-reply@lukintosh.com"
 
 resend.api_key = RESEND_API_KEY
 
-# Rate limit (anti brute force)
 limiter = Limiter(get_remote_address, app=app, default_limits=["10 per minute"])
 
-# armazenamento temporário
 codigo_data = {}
 
 # =========================
@@ -91,6 +89,26 @@ def enviar_email(codigo, destino, ip, device, location):
         "subject": "⚠️ Novo login detectado - Lukintosh",
         "html": html
     })
+
+# =========================
+# ROOT (FIX 404)
+# =========================
+
+@app.route("/")
+def home():
+    return {
+        "status": "ok",
+        "service": "Lukintosh Accounts",
+        "version": "1.0"
+    }
+
+# =========================
+# HEALTH CHECK
+# =========================
+
+@app.route("/health")
+def health():
+    return {"status": "ok"}
 
 # =========================
 # REGISTER
@@ -178,14 +196,6 @@ def verify_login():
         "success": True,
         "message": "Login autorizado"
     })
-
-# =========================
-# HEALTH CHECK
-# =========================
-
-@app.route("/health")
-def health():
-    return {"status": "ok"}
 
 # =========================
 # RUN
