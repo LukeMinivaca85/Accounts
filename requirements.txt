@@ -2,3 +2,4 @@ flask
 requests
 authlib
 resend
+flask_limiter
