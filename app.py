@@ -1,42 +1,23 @@
-from flask import Flask, request, jsonify
-import sqlite3
-import random
-import time
-import requests
-import resend
-import os
-
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
+from flask import Flask, request, jsonify, send_file
+import sqlite3, random, time, requests, os, jwt, datetime, resend
 
 app = Flask(__name__)
 
-# =========================
 # CONFIG
-# =========================
-
 RESEND_API_KEY = os.getenv("RESEND_API_KEY")
-EMAIL_REMETENTE = "no-reply@lukintosh.com"
+SECRET_KEY = os.getenv("SECRET_KEY", "lukintosh-secret")
 
 resend.api_key = RESEND_API_KEY
 
-limiter = Limiter(get_remote_address, app=app, default_limits=["10 per minute"])
-
 codigo_data = {}
 
-# =========================
-# DATABASE
-# =========================
-
+# DB
 def get_db():
     conn = sqlite3.connect("users.db")
     conn.row_factory = sqlite3.Row
     return conn
 
-# =========================
 # UTIL
-# =========================
-
 def gerar_codigo():
     return str(random.randint(100000, 999999))
 
@@ -44,110 +25,61 @@ def get_ip():
     return request.headers.get("CF-Connecting-IP", request.remote_addr)
 
 def get_device():
-    return request.headers.get("User-Agent", "Desconhecido")
+    return request.headers.get("User-Agent")
 
 def get_location(ip):
     try:
         res = requests.get(f"http://ip-api.com/json/{ip}").json()
-        return f"{res.get('city')}, {res.get('regionName')} - {res.get('country')}"
+        return f"{res.get('city')}, {res.get('country')}"
     except:
-        return "Localização desconhecida"
+        return "Unknown"
 
-# =========================
 # EMAIL
-# =========================
-
 def enviar_email(codigo, destino, ip, device, location):
-    html = f"""
-    <h2>Lukintosh Security Alert</h2>
-
-    <p>Detectamos um login na sua conta.</p>
-
-    <h1>{codigo}</h1>
-
-    <h3>Detalhes do acesso:</h3>
-    <ul>
-        <li><b>IP:</b> {ip}</li>
-        <li><b>Localização:</b> {location}</li>
-        <li><b>Dispositivo:</b> {device}</li>
-    </ul>
-
-    <p>Se foi você, use o código acima.</p>
-
-    <p><b>Se NÃO foi você:</b></p>
-    <ul>
-        <li>Ignore este email</li>
-        <li>Altere sua senha imediatamente</li>
-    </ul>
-
-    <p>Expira em 5 minutos.</p>
-    """
-
     resend.Emails.send({
-        "from": f"Lukintosh <{EMAIL_REMETENTE}>",
+        "from": "Lukintosh <no-reply@lukintosh.com>",
         "to": [destino],
-        "subject": "⚠️ Novo login detectado - Lukintosh",
-        "html": html
+        "subject": "⚠️ Login detectado",
+        "html": f"""
+        <h2>Lukintosh Security</h2>
+        <h1>{codigo}</h1>
+        <p>IP: {ip}</p>
+        <p>Local: {location}</p>
+        <p>Device: {device}</p>
+        <p>Se não foi você, ignore este email.</p>
+        """
     })
 
-# =========================
-# ROOT (FIX 404)
-# =========================
-
+# HOME (serve o index.html)
 @app.route("/")
 def home():
-    return {
-        "status": "ok",
-        "service": "Lukintosh Accounts",
-        "version": "1.0"
-    }
+    return send_file("index.html")
 
-# =========================
-# HEALTH CHECK
-# =========================
-
-@app.route("/health")
-def health():
-    return {"status": "ok"}
-
-# =========================
 # REGISTER
-# =========================
-
 @app.route("/register", methods=["POST"])
-@limiter.limit("5 per minute")
 def register():
     data = request.json
-    email = data.get("email")
-    password = data.get("password")
 
     db = get_db()
-    db.execute("INSERT INTO users (email, password) VALUES (?, ?)", (email, password))
+    db.execute("INSERT INTO users (email, password) VALUES (?, ?)",
+               (data["email"], data["password"]))
     db.commit()
     db.close()
 
-    return jsonify({"message": "Usuário criado com sucesso"})
+    return {"message": "Conta criada"}
 
-# =========================
-# LOGIN (STEP 1)
-# =========================
-
+# LOGIN
 @app.route("/login", methods=["POST"])
-@limiter.limit("5 per minute")
 def login():
     data = request.json
-    email = data.get("email")
-    password = data.get("password")
 
     db = get_db()
-    user = db.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
+    user = db.execute("SELECT * FROM users WHERE email=?",
+                      (data["email"],)).fetchone()
     db.close()
 
-    if not user:
-        return jsonify({"error": "Usuário não encontrado"}), 404
-
-    if user["password"] != password:
-        return jsonify({"error": "Senha incorreta"}), 401
+    if not user or user["password"] != data["password"]:
+        return {"error": "Login inválido"}, 401
 
     codigo = gerar_codigo()
 
@@ -155,52 +87,34 @@ def login():
     device = get_device()
     location = get_location(ip)
 
-    codigo_data[email] = {
+    codigo_data[data["email"]] = {
         "codigo": codigo,
         "expira": time.time() + 300
     }
 
-    enviar_email(codigo, email, ip, device, location)
+    enviar_email(codigo, data["email"], ip, device, location)
 
-    return jsonify({
-        "message": "Código enviado",
-        "2fa_required": True
-    })
+    return {"2fa": True}
 
-# =========================
 # VERIFY LOGIN
-# =========================
-
 @app.route("/verify-login", methods=["POST"])
-@limiter.limit("10 per minute")
-def verify_login():
+def verify():
     data = request.json
-    email = data.get("email")
-    codigo = data.get("codigo")
 
-    if email not in codigo_data:
-        return jsonify({"error": "Código expirado"}), 400
+    if data["email"] not in codigo_data:
+        return {"error": "Expirado"}, 400
 
-    info = codigo_data[email]
+    if codigo_data[data["email"]]["codigo"] != data["codigo"]:
+        return {"error": "Código errado"}, 401
 
-    if time.time() > info["expira"]:
-        del codigo_data[email]
-        return jsonify({"error": "Código expirado"}), 400
+    token = jwt.encode({
+        "email": data["email"],
+        "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=24)
+    }, SECRET_KEY, algorithm="HS256")
 
-    if info["codigo"] != codigo:
-        return jsonify({"error": "Código inválido"}), 401
+    return {"token": token}
 
-    del codigo_data[email]
-
-    return jsonify({
-        "success": True,
-        "message": "Login autorizado"
-    })
-
-# =========================
 # RUN
-# =========================
-
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
