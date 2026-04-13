@@ -1,119 +1,75 @@
 <!DOCTYPE html>
-<html lang="pt">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>Lukintosh Accounts</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #111;
-      color: #fff;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-    }
-    .container {
-      background: #1e1e1e;
-      padding: 20px;
-      border-radius: 10px;
-      width: 320px;
-      text-align: center;
-    }
-    h1 {
-      font-size: 20px;
-      margin-bottom: 20px;
-    }
-    input {
-      width: 90%;
-      padding: 10px;
-      margin: 8px 0;
-      border: none;
-      border-radius: 5px;
-    }
-    button {
-      background: #0f9d58;
-      color: white;
-      border: none;
-      padding: 10px;
-      width: 100%;
-      border-radius: 5px;
-      cursor: pointer;
-      margin-top: 8px;
-    }
-    button:hover {
-      background: #0c7a43;
-    }
-    .message {
-      margin-top: 15px;
-      font-size: 14px;
-      min-height: 20px;
-    }
-  </style>
+<meta charset="UTF-8">
+<title>Lukintosh Accounts</title>
+<style>
+body { background:#111; color:white; text-align:center; font-family:Arial; }
+input,button { margin:10px; padding:10px; }
+</style>
 </head>
+
 <body>
-  <div class="container">
-    <h1>Lukintosh Accounts</h1>
-    <input type="email" id="email" placeholder="Email"><br>
-    <input type="password" id="password" placeholder="Senha"><br>
-    <button onclick="signUp()">Criar Conta</button>
-    <button onclick="login()">Entrar</button>
-    <div class="message" id="message"></div>
-  </div>
 
-  <!-- Firebase SDK (v10 modular) -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } 
-      from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-  // Import the functions you need from the SDKs you need
+<h1>Lukintosh</h1>
 
-  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-analytics.js";
-  // TODO: Add SDKs for Firebase products that you want to use
-  // https://firebase.google.com/docs/web/setup#available-libraries
+<input id="email" placeholder="Email"><br>
+<input id="password" type="password" placeholder="Senha"><br>
 
-  // Your web app's Firebase configuration
-  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-  const firebaseConfig = {
-    apiKey: "AIzaSyCjQlVzKAjjBpJCa7idKcFT4QkHUlpZQFo",
-    authDomain: "firezonesalogin.firebaseapp.com",
-    projectId: "firezonesalogin",
-    storageBucket: "firezonesalogin.firebasestorage.app",
-    messagingSenderId: "971735310017",
-    appId: "1:971735310017:web:bda988223f03a47de27e40",
-    measurementId: "G-VG4HK7MJPQ"
-  };
+<button onclick="signup()">Criar Conta</button>
+<button onclick="login()">Login</button>
 
-  // Initialize Firebase
-  const app = initializeApp(firebaseConfig);
-  const analytics = getAnalytics(app);
+<script>
 
- 
+async function signup(){
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
 
-    // Criar conta
-    window.signUp = async function() {
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
-      try {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        document.getElementById("message").innerText = `✅ Conta criada: ${userCredential.user.email}`;
-      } catch (error) {
-        document.getElementById("message").innerText = "Erro: " + error.message;
-      }
-    };
+  const res = await fetch("/register", {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({email,password})
+  });
 
-    // Fazer login
-    window.login = async function() {
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
-      try {
-        const userCredential = await signInWithEmailAndPassword(auth, email, password);
-        document.getElementById("message").innerText = `🚀 Bem-vindo: ${userCredential.user.email}`;
-      } catch (error) {
-        document.getElementById("message").innerText = "Erro: " + error.message;
-      }
-    };
-  </script>
+  const data = await res.json();
+  alert(data.message || data.error);
+}
+
+async function login(){
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+
+  const res = await fetch("/login", {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({email,password})
+  });
+
+  const data = await res.json();
+
+  if(data["2fa"]){
+    const codigo = prompt("Digite o código do email:");
+
+    const verify = await fetch("/verify-login", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({email,codigo})
+    });
+
+    const v = await verify.json();
+
+    if(v.token){
+      localStorage.setItem("token", v.token);
+      alert("Login realizado 🚀");
+    } else {
+      alert(v.error);
+    }
+  } else {
+    alert(data.error);
+  }
+}
+
+</script>
+
 </body>
 </html>
